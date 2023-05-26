@@ -1,0 +1,49 @@
+name: 'Node Binary'
+description: 'Build and publishes Node executables'
+inputs:
+  target:
+    description: 'Glob that points to binaries '
+    required: true
+    default: 'dist/*'
+  token:
+    description: 'Github token for uploading assets'
+    required: true
+  action:
+    description: 'NPM action to run to build binaries'
+    required: true
+    default: 'build-binary'
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Configure LDID
+      uses: MOZGIII/install-ldid-action@v1
+      with:
+        tag: v2.1.5-procursus7
+
+    - name: Configure Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        registry-url: https://registry.npmjs.org/
+
+    - name: Install deps
+      run: npm install --ignore-scripts
+      shell: bash
+
+    - name: Build binaries
+      run: npm run ${{ inputs.action }}
+      shell: bash
+
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ inputs.token }}
+        file: ${{ inputs.target }}
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
